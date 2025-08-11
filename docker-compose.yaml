@@ -1,16 +1,15 @@
+version: '3.8'  # Pode remover esta linha conforme o warning
+
 services:
   api:
     build: ./api
     ports:
       - "5000:5000"
-    environment:
-      FLASK_ENV: development
-    # Healthcheck redundante (já está no Dockerfile)
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'  # Limita CPU
-          memory: 256M  # Limita RAM
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
   tests:
     image: ppodgorsek/robot-framework:latest
@@ -18,9 +17,7 @@ services:
       api:
         condition: service_healthy
     volumes:
-      - ./results:/results
-      - ./tests:/tests
-    command: >
-      sh -c "echo 'Aguardando API...';
-      timeout 30s bash -c 'until curl -sf http://api:5000/health; do sleep 1; done';
-      robot --outputdir /results /tests"
+      - ./tests:/opt/robotframework/tests  # Mapeamento correto
+      - ./results:/opt/robotframework/results
+    environment:
+      ROBOT_OPTIONS: --outputdir /opt/robotframework/results
