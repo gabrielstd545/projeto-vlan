@@ -1,0 +1,26 @@
+services:
+  api:
+    build: ./api
+    ports:
+      - "5000:5000"
+    environment:
+      FLASK_ENV: development
+    # Healthcheck redundante (já está no Dockerfile)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'  # Limita CPU
+          memory: 256M  # Limita RAM
+
+  tests:
+    image: ppodgorsek/robot-framework:latest
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./results:/results
+      - ./tests:/tests
+    command: >
+      sh -c "echo 'Aguardando API...';
+      timeout 30s bash -c 'until curl -sf http://api:5000/health; do sleep 1; done';
+      robot --outputdir /results /tests"
